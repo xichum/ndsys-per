@@ -1,89 +1,85 @@
-# NetCore Service Container
+# Network Stream Controller (NSC)
 
-A lightweight, automated container for network stream forwarding and edge connectivity management. Designed for high-performance minimalist environments.
+A containerized solution for high-performance stream routing and edge endpoint management. Designed for deployment in minimal environments.
 
 ## Quick Start
 
-### Docker CLI
+**Docker CLI**
 
 ```bash
 docker run -d \
-  --name netcore \
+  --name nsc-node \
   --restart always \
   --network host \
   -v $(pwd)/data:/data \
   -e TZ="Asia/Shanghai" \
-  -e H_PORT=20343 \
-  -e R_PORT=20343 \
-  ghcr.io/YOUR_USERNAME/YOUR_REPO:latest
+  -e H_PORT=51130 \
+  -e T_PORT=51131 \
+  -e R_PORT=51132 \
+  -e S_ID="your-custom-uuid-here" \
+  ghcr.io/YOURNAME/REPO:latest
 ```
 
-### Docker Compose
+## Configuration Reference
 
-```yaml
-version: '3.8'
-services:
-  core:
-    image: ghcr.io/YOUR_USERNAME/YOUR_REPO:latest
-    restart: always
-    network_mode: "host"
-    volumes:
-      - ./data:/data
-    environment:
-      - H_PORT=20343
-      - R_PORT=20343
-      - TZ=Asia/Shanghai
-```
+All configurations are managed via Environment Variables.
 
-## Configuration
-
-The service is controlled entirely via Environment Variables.
-
-### Network Modules
+### 1. Network Endpoints
+Define the listening ports for different transport protocols.
 
 | Variable | Default | Description |
 | :--- | :--- | :--- |
-| `T_PORT` | *None* | Port for Module T (TCP/UDP). Leave empty to disable. |
-| `H_PORT` | `20343` | Port for Module H (UDP-based). |
-| `R_PORT` | `20343` | Port for Module R (TCP-based). |
+| `T_PORT` | *Disabled* | **Transport-T** listening port (TCP/UDP). |
+| `H_PORT` | `20343` | **Transport-H** listening port (UDP). |
+| `R_PORT` | `20343` | **Transport-R** listening port (TCP). |
 
-### System Settings
-
-| Variable | Default | Description |
-| :--- | :--- | :--- |
-| `BIN_V` | *Latest* | Force a specific core binary version (e.g., `1.10.0`). |
-| `ID_PRE` | `Srv` | Prefix tag for the generated link identifiers. |
-| `LOG_ON` | `false` | Enable internal verbose logging (`true`/`false`). |
-| `TZ` | *UTC* | System timezone (e.g., `Asia/Shanghai`). |
-
-### Remote Resources
-
-Auto-fetch external security certificates or keys on startup.
+### 2. Session & Authentication
+Manage identity and access control.
 
 | Variable | Default | Description |
 | :--- | :--- | :--- |
-| `REM_ON` | `true` | Enable remote resource fetching. |
-| `REM_C` | *Default URL* | URL to fetch the public certificate (PEM). |
-| `REM_K` | *Default URL* | URL to fetch the private key (PEM). |
+| `S_ID` | *Auto-Gen* | **Master Session ID**. If set, this static ID will persist across restarts. |
+| `T_PASS` | `admin` | Access token for Transport-T. |
+| `H_PASS` | *Same as S_ID* | Access token for Transport-H. |
 
-## Persistence
+### 3. Upstream Routing
+Configuration for Transport-R upstream handshake (Handshake/Dest).
 
-It is highly recommended to mount the `/data` volume.
-This directory stores:
-*   Unique Instance UUIDs
-*   Generated Keys
-*   Cached Binaries
-*   Runtime Logs
+| Variable | Default | Description |
+| :--- | :--- | :--- |
+| `R_DOM` | `www.nazhumi.com` | **Target Hostname**. The domain used for handshake verification. |
+| `R_DOM_P`| `443` | **Target Port**. The port of the target host. |
+
+### 4. System & Logging
+
+| Variable | Default | Description |
+| :--- | :--- | :--- |
+| `ID_PRE` | `Srv` | **Node Label**. Prefix used in the exported config string. |
+| `BIN_V` | *Latest* | **Core Version**. Pin a specific binary version (e.g., `1.10.0`). |
+| `LOG_ON` | `false` | **Debug Mode**. Set to `true` to enable verbose file logging. |
+| `TZ` | *UTC* | **Timezone**. System timezone (e.g., `Asia/Shanghai`). |
+
+### 5. Remote Resources
+Auto-provisioning of security assets (Certificates/Keys) from external URLs.
+
+| Variable | Default | Description |
+| :--- | :--- | :--- |
+| `REM_ON` | `true` | Enable remote asset fetching. |
+| `REM_C` | *Default* | URL for the **Public Asset** (PEM format). |
+| `REM_K` | *Default* | URL for the **Private Asset** (Key format). |
+
+## Data Persistence
+
+Mounting `/data` is recommended to persist the Session ID and cached binaries.
 
 ```bash
--v /host/path:/data
+-v /your/local/path:/data
 ```
 
-## Access Info
+## Status Output
 
-Upon startup, the container generates an initialization token.
-View it via container logs:
+To retrieve the initialization string (Base64 encoded configuration):
 
 ```bash
-docker logs netcore
+docker logs nsc-node
 ```
